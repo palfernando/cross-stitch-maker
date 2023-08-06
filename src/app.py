@@ -92,7 +92,7 @@ def main():
         # KMeans algorithm
         if quantize and kmeans:
             st.write("KMeans")
-            st.info('The processing time depends on the size of the image. So, please wait until the result appear!', icon="ℹ️")
+            st.info('The depends on the size of the image. So, please wait until the result appear!', icon="ℹ️")
             quantized_image, colors = kMeans.kmeans_quantization(image, num_colors) # Quantization of the image
             centroid_colors = tuple(np.uint8(colors).tolist())
 
