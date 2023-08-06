@@ -12,6 +12,7 @@ import stitch_pattern_maker
 import color_palette as cp
 from utils import set_bg
 import ABC
+from pathlib import Path
 
 import kMeans
 from phq import *
@@ -46,10 +47,12 @@ def main():
 
     # Web page initialization
     # Please set the path to the assests and style folders
-    set_bg(r'...\assets\background.jpg')
+    bgPath = Path(__file__).parents[0] / 'background.jpg'
+    set_bg(bgPath)
     st.title("Image Quantization and Stitch Pattern Generator")
 
-    local_css(r".../style/style.css")
+    cssPath = Path(__file__).parents[0] / 'style.css'
+    local_css(cssPath)
 
     # Upload image
     uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
