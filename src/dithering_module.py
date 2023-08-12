@@ -1,12 +1,12 @@
 import numpy as np
 
 def floyd_steinberg_dithering(img, num_colors):
-    img = np.array(img) / 255
+    img = img / 255
     for ir in range(img.shape[0]):
         for ic in range(img.shape[1]):
             old_val = img[ir, ic].copy()
             # print("Old Value",old_val)
-            new_val = np.round(old_val * (num_colors)) / (num_colors)
+            new_val = np.round(old_val * (num_colors-1)) / (num_colors-1)
             # print("New Value",new_val)
             img[ir, ic] = new_val
             err = old_val - new_val

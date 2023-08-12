@@ -62,6 +62,7 @@ def main():
     phq = False
     abc = False
     quantize = None
+    
 
     if uploaded_file is not None:
 
@@ -71,7 +72,10 @@ def main():
         # Uploaded image is loaded as a numpy array
         image = Image.open(uploaded_file)
         image = np.array(image)
+        original_img = np.array(image)
+        original_img = original_img.astype("uint8")
 
+        
         with st.sidebar:
             # Three sliders to select the number of colors to be identified and the stitch size & width
             num_colors = st.slider("Number of Colors", min_value=2, max_value=100, value=5, step=1)
@@ -94,22 +98,19 @@ def main():
         if quantize and kmeans:
             placeholder = st.empty()
             #start = time.time()
-            st.write("KMeans")
+            st.write("KMeans Quantization Selected")
             if dither:
                 placeholder.info('Dithering In Progress, Please Wait!', icon="ℹ️")
                 image = dithering_module.floyd_steinberg_dithering(image,num_colors) # Dithering the image using floyd steinberg method
             placeholder.info('Quantization In Progress, Please Wait!', icon="ℹ️") 
             quantized_image, colors = kMeans.kmeans_quantization(image, num_colors) # Quantization of the image
-            
-                        
-            # making the stitch pattern using a user given stitch size in pixels
-            pattern = kMeans.create_pattern(quantized_image, stitch_size)
-            original_reduced = kMeans.create_pattern(image, stitch_size)
+                                
+              
 
             im_pil = Image.fromarray(quantized_image)
             im_pil.save("processed_image.jpg")
 
-            psnr, ssim, mse = kMeans.calculate_metrics(original_reduced, pattern)
+            psnr, ssim, mse = kMeans.calculate_metrics(quantized_image, original_img)
 
             col_psnr, col_ssim, col_mse = st.columns(3)
 
@@ -143,7 +144,7 @@ def main():
         # PHQ algorithm
         if quantize and phq:
             placeholder = st.empty()
-            st.write("PHQ")
+            st.write("PHQ Quantization Selected")
             #start = time.time()
             if dither:
                 placeholder.info('Dithering In Progress, Please Wait!', icon="ℹ️")
@@ -154,20 +155,13 @@ def main():
             
             # st.image(quantized_image)
             centroid_colors = tuple(np.uint8(colors).tolist())
-            #print(centroid_colors)
+                                        
 
-                                  
-
-            # making the stitch pattern using a user given stitch size in pixels
-            pattern = kMeans.create_pattern(quantized_image, stitch_size)
-            original_reduced = kMeans.create_pattern(image, stitch_size)
-
-            # Display and save processed image
-
+           
             im_pil = Image.fromarray(quantized_image)
             im_pil.save("processed_image.jpg")
 
-            psnr, ssim, mse = kMeans.calculate_metrics(original_reduced, pattern)
+            psnr, ssim, mse = kMeans.calculate_metrics(quantized_image, original_img)
 
             col_psnr, col_ssim, col_mse = st.columns(3)
 
@@ -201,7 +195,7 @@ def main():
         # ABC algorithm
         if quantize and abc:
             placeholder = st.empty()
-            st.write("ABC")
+            st.write("ABC Quantization Selected")
             #start = time.time()
             if dither:
                 placeholder.info('Dithering In Progress, Please Wait!', icon="ℹ️")
@@ -210,10 +204,6 @@ def main():
             quantized_image, colors = ABC.run_ABC(image, num_colors)  # calling the function
             centroid_colors = np.uint8(colors)
                             
-            # making the stitch pattern using a user given stitch size in pixels
-            pattern = kMeans.create_pattern(quantized_image, stitch_size)
-            original_reduced = kMeans.create_pattern(image, stitch_size)
-
             centroid_colors = centroid_colors.reshape((-1, centroid_colors.shape[-1]))
 
             # Display and save processed image
@@ -221,7 +211,7 @@ def main():
             im_pil = Image.fromarray(quantized_image)
             im_pil.save("processed_image.jpg")
 
-            psnr, ssim, mse = kMeans.calculate_metrics(original_reduced, pattern)
+            psnr, ssim, mse = kMeans.calculate_metrics(quantized_image, original_img)
 
             col_psnr, col_ssim, col_mse = st.columns(3)
 
