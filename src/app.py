@@ -12,6 +12,7 @@ import stitch_pattern_maker
 import color_palette as cp
 from utils import set_bg
 import ABC
+
 import time
 from pathlib import Path
 
@@ -51,7 +52,9 @@ def main():
     # Please set the path to the assests and style folders
     bgPath = Path(__file__).parents[0] / 'background.jpg'
     set_bg(bgPath)
+
     st.title("Cross-Stitch Pattern Maker")
+
 
     cssPath = Path(__file__).parents[0] / 'style.css'
     local_css(cssPath)
