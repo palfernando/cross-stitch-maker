@@ -12,6 +12,9 @@ import stitch_pattern_maker
 import color_palette as cp
 from utils import set_bg
 import ABC
+import time
+from pathlib import Path
+
 
 import kMeans
 from phq import *
@@ -46,10 +49,12 @@ def main():
 
     # Web page initialization
     # Please set the path to the assests and style folders
-    set_bg(r'...\assets\background.jpg')
-    st.title("Image Quantization and Stitch Pattern Generator")
+    bgPath = Path(__file__).parents[0] / 'background.jpg'
+    set_bg(bgPath)
+    st.title("Cross-Stitch Pattern Maker")
 
-    local_css(r".../style/style.css")
+    cssPath = Path(__file__).parents[0] / 'style.css'
+    local_css(cssPath)
 
     # Upload image
     uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
@@ -61,6 +66,7 @@ def main():
     phq = False
     abc = False
     quantize = None
+    
 
     if uploaded_file is not None:
 
@@ -70,7 +76,10 @@ def main():
         # Uploaded image is loaded as a numpy array
         image = Image.open(uploaded_file)
         image = np.array(image)
+        original_img = np.array(image)
+        original_img = original_img.astype("uint8")
 
+        
         with st.sidebar:
             # Three sliders to select the number of colors to be identified and the stitch size & width
             num_colors = st.slider("Number of Colors", min_value=2, max_value=100, value=5, step=1)
@@ -91,19 +100,21 @@ def main():
            
         # KMeans algorithm
         if quantize and kmeans:
-            st.write("KMeans")
-            st.info('The processing time depends on the size of the image. So, please wait until the result appear!', icon="ℹ️")
+            placeholder = st.empty()
+            #start = time.time()
+            st.write("KMeans Quantization Selected")
+            if dither:
+                placeholder.info('Dithering In Progress, Please Wait!', icon="ℹ️")
+                image = dithering_module.floyd_steinberg_dithering(image,num_colors) # Dithering the image using floyd steinberg method
+            placeholder.info('Quantization In Progress, Please Wait!', icon="ℹ️") 
             quantized_image, colors = kMeans.kmeans_quantization(image, num_colors) # Quantization of the image
-            centroid_colors = tuple(np.uint8(colors).tolist())
-
-            # making the stitch pattern using a user given stitch size in pixels
-            pattern = kMeans.create_pattern(quantized_image, stitch_size)
-            original_reduced = kMeans.create_pattern(image, stitch_size)
+                                
+              
 
             im_pil = Image.fromarray(quantized_image)
             im_pil.save("processed_image.jpg")
 
-            psnr, ssim, mse = kMeans.calculate_metrics(original_reduced, pattern)
+            psnr, ssim, mse = kMeans.calculate_metrics(quantized_image, original_img)
 
             col_psnr, col_ssim, col_mse = st.columns(3)
 
@@ -116,17 +127,19 @@ def main():
 
             quantized_image = Image.open("processed_image.jpg")
 
-            if dither:
-                st.info('Image dithering takes some time and depends on the size of the image!', icon="ℹ️")
-                q_image = np.array(quantized_image)
-                quantized_image = dithering_module.floyd_steinberg_dithering(q_image) # Dithering the image using floyd steinberg method
-                quantized_image = Image.fromarray(quantized_image)
-            
+                    
 
             if quantized_image is not None:
                 stitch_pattern = stitch_pattern_maker.stitch_pattern(quantized_image,stitch_size,stitch_width)
                 stitch_pattern.save("stitch_pattern.png")
-                st.image(stitch_pattern, caption="Stitch Pattern", use_column_width=True)            
+                st.image(stitch_pattern, caption="Stitch Pattern", use_column_width=True)
+                if dither:
+                    placeholder.success('Dithered & Quantizated Cross-stitch Pattern!', icon="ℹ️")
+                else:    
+                    placeholder.success('Quantized Cross-stitch Pattern!', icon="ℹ️")
+
+                #end = time.time()
+                #print("Time", end-start)            
     
             colors = colors.tolist()
             cp.show_rgb_values_box(colors)
@@ -134,24 +147,25 @@ def main():
 
         # PHQ algorithm
         if quantize and phq:
-            st.write("PHQ")
-            st.info('The processing time depends on the size of the image. So, please wait until the result appear!', icon="ℹ️")      
+            placeholder = st.empty()
+            st.write("PHQ Quantization Selected")
+            #start = time.time()
+            if dither:
+                placeholder.info('Dithering In Progress, Please Wait!', icon="ℹ️")
+                image = dithering_module.floyd_steinberg_dithering(image,num_colors) # Dithering the image using floyd steinberg method
+            placeholder.info('Quantization In Progress, Please Wait!', icon="ℹ️")    
             quantized_histogram_r, quantized_histogram_g, quantized_histogram_b = progressive_histogram_quantization(image, desired_bins=5)
-            quantized_image, colors = kmeans_quantization(image, quantized_histogram_r, quantized_histogram_g, quantized_histogram_b, n_clusters=5)
+            quantized_image, colors = kmeans_quantization(image, quantized_histogram_r, quantized_histogram_g, quantized_histogram_b, num_colors)
+            
             # st.image(quantized_image)
             centroid_colors = tuple(np.uint8(colors).tolist())
-            #print(centroid_colors)
+                                        
 
-            # making the stitch pattern using a user given stitch size in pixels
-            pattern = kMeans.create_pattern(quantized_image, stitch_size)
-            original_reduced = kMeans.create_pattern(image, stitch_size)
-
-            # Display and save processed image
-
+           
             im_pil = Image.fromarray(quantized_image)
             im_pil.save("processed_image.jpg")
 
-            psnr, ssim, mse = kMeans.calculate_metrics(original_reduced, pattern)
+            psnr, ssim, mse = kMeans.calculate_metrics(quantized_image, original_img)
 
             col_psnr, col_ssim, col_mse = st.columns(3)
 
@@ -164,18 +178,18 @@ def main():
 
             quantized_image = Image.open("processed_image.jpg")
 
-            if dither:
-                st.info('Image dithering takes some time and depends on the size of the image!', icon="ℹ️")
-                q_image = np.array(quantized_image)
-                quantized_image = dithering_module.floyd_steinberg_dithering(q_image) # Dithering the image using floyd steinberg method
-                quantized_image = Image.fromarray(quantized_image)
             
-
             if quantized_image is not None:
                 stitch_pattern = stitch_pattern_maker.stitch_pattern(quantized_image,stitch_size,stitch_width)
                 stitch_pattern.save("stitch_pattern.png")
                 st.image(stitch_pattern, caption="Stitch Pattern", use_column_width=True)
                 pdf_ready = True
+                if dither:
+                    placeholder.success('Dithered & Quantizated Cross-titch Pattern!', icon="ℹ️")
+                else: 
+                    placeholder.success('Quantized Cross-stitch Pattern!', icon="ℹ️")
+                #end = time.time()
+                #print("Time", end-start) 
           
             colors = colors.tolist()
             colors = [color[:3] for color in colors]
@@ -184,15 +198,16 @@ def main():
 
         # ABC algorithm
         if quantize and abc:
-            st.write("ABC")
-            st.info('The processing time depends on the size of the image. So, please wait until the result appear!', icon="ℹ️")
+            placeholder = st.empty()
+            st.write("ABC Quantization Selected")
+            #start = time.time()
+            if dither:
+                placeholder.info('Dithering In Progress, Please Wait!', icon="ℹ️")
+                image = dithering_module.floyd_steinberg_dithering(image,num_colors) # Dithering the image using floyd steinberg method
+            placeholder.info('Quantization In Progress Please Wait', icon="ℹ️")    
             quantized_image, colors = ABC.run_ABC(image, num_colors)  # calling the function
             centroid_colors = np.uint8(colors)
-
-            # making the stitch pattern using a user given stitch size in pixels
-            pattern = kMeans.create_pattern(quantized_image, stitch_size)
-            original_reduced = kMeans.create_pattern(image, stitch_size)
-
+                            
             centroid_colors = centroid_colors.reshape((-1, centroid_colors.shape[-1]))
 
             # Display and save processed image
@@ -200,7 +215,7 @@ def main():
             im_pil = Image.fromarray(quantized_image)
             im_pil.save("processed_image.jpg")
 
-            psnr, ssim, mse = kMeans.calculate_metrics(original_reduced, pattern)
+            psnr, ssim, mse = kMeans.calculate_metrics(quantized_image, original_img)
 
             col_psnr, col_ssim, col_mse = st.columns(3)
 
@@ -213,17 +228,18 @@ def main():
 
             quantized_image = Image.open("processed_image.jpg")
 
-            if dither:
-                st.info('Image dithering takes some time and depends on the size of the image!', icon="ℹ️")
-                q_image = np.array(quantized_image)
-                quantized_image = dithering_module.floyd_steinberg_dithering(q_image) # Dithering the image using floyd steinberg method
-                quantized_image = Image.fromarray(quantized_image)
-            
+                       
 
             if quantized_image is not None:
                 stitch_pattern = stitch_pattern_maker.stitch_pattern(quantized_image,stitch_size,stitch_width)
                 stitch_pattern.save("stitch_pattern.png")
                 st.image(stitch_pattern, caption="Stitch Pattern", use_column_width=True)
+                if dither:
+                    placeholder.success('Dithered & Quantizated Cross-stitch Pattern!', icon="ℹ️")
+                else:
+                    placeholder.success('Quantized Cross-stitch Pattern!', icon="ℹ️")
+                #end = time.time()
+                #print("Time", end-start) 
             
             colors = colors.reshape((-1, colors.shape[-1]))
             colors = colors.tolist()
