@@ -13,6 +13,8 @@ import color_palette as cp
 from utils import set_bg
 import ABC
 import time
+from pathlib import Path
+
 
 import kMeans
 from phq import *
@@ -47,10 +49,12 @@ def main():
 
     # Web page initialization
     # Please set the path to the assests and style folders
-    set_bg(r'C:\My Files\PYProject\cross-stitch-maker\assets\background.jpg')
+    bgPath = Path(__file__).parents[0] / 'background.jpg'
+    set_bg(bgPath)
     st.title("Cross-Stitch Pattern Maker")
 
-    local_css(r"C:\My Files\PYProject\cross-stitch-maker\style/style.css")
+    cssPath = Path(__file__).parents[0] / 'style.css'
+    local_css(cssPath)
 
     # Upload image
     uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
@@ -151,7 +155,7 @@ def main():
                 image = dithering_module.floyd_steinberg_dithering(image,num_colors) # Dithering the image using floyd steinberg method
             placeholder.info('Quantization In Progress, Please Wait!', icon="ℹ️")    
             quantized_histogram_r, quantized_histogram_g, quantized_histogram_b = progressive_histogram_quantization(image, desired_bins=5)
-            quantized_image, colors = kmeans_quantization(image, quantized_histogram_r, quantized_histogram_g, quantized_histogram_b, n_clusters=5)
+            quantized_image, colors = kmeans_quantization(image, quantized_histogram_r, quantized_histogram_g, quantized_histogram_b, num_colors)
             
             # st.image(quantized_image)
             centroid_colors = tuple(np.uint8(colors).tolist())

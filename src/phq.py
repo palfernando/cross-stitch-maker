@@ -44,6 +44,7 @@ def progressive_histogram_quantization_single_channel(histogram, desired_bins):
 
 def kmeans_quantization(image, histogram_r, histogram_g, histogram_b, n_clusters):
     print(image.shape)
+    print("Clusters:",n_clusters)
     reshaped_image = image.reshape(-1, 3)
     frequencies = np.zeros_like(reshaped_image, dtype=np.float64)
     for i in range(reshaped_image.shape[0]):
@@ -52,7 +53,7 @@ def kmeans_quantization(image, histogram_r, histogram_g, histogram_b, n_clusters
         frequencies[i, 1] = histogram_g[g] / reshaped_image.shape[0]
         frequencies[i, 2] = histogram_b[b] / reshaped_image.shape[0]
     reshaped_image = np.hstack((reshaped_image, frequencies))
-    kmeans = MiniBatchKMeans(n_clusters=n_clusters)
+    kmeans = MiniBatchKMeans(n_clusters)
     kmeans.fit(reshaped_image)
     quantized_image = kmeans.cluster_centers_[kmeans.labels_]
     quantized_image = quantized_image[:, :3].reshape(image.shape).astype(np.uint8)
